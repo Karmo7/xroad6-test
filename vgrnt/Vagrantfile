@@ -1,0 +1,50 @@
+MINION_CNT = 2
+
+MASTER_IP = "10.1.10.3"
+
+vm_box = 'ubuntu/trusty64'
+
+$bootstrapMinion = <<SCRIPT
+ echo "#{MASTER_IP} saltmaster" >> /etc/hosts
+ hostname `cat /etc/hostname`
+ echo Updated hosts entry for 'salt' to #{MASTER_IP}
+ wget -O install_salt.sh https://bootstrap.saltstack.com
+ sh install_salt.sh
+ echo "master: #{MASTER_IP}" >> /etc/salt/minion
+ service salt-minion restart
+ echo "LC_ALL=en_US.UTF-8" >> /etc/environment
+SCRIPT
+
+$bootstrapMaster = <<SCRIPT
+ echo "LC_ALL=en_US.UTF-8" >> /etc/environment
+ wget -O install_salt.sh https://bootstrap.saltstack.com
+ sudo sh install_salt.sh -M -N
+ echo "waiting for minions.."
+ sleep 11
+ salt-key -L
+ salt-key -A -y
+ salt '*' test.ping
+SCRIPT
+
+Vagrant.configure('2') do |config|
+
+ # The Minions
+ (1..MINION_CNT).each do |i|
+   config.vm.define "xroad-0#{i}" do |minion|
+     minion.vm.box = vm_box
+     minion.vm.synced_folder "../xroad", "/srv/xroad"
+     ip = i + 3
+     minion.vm.hostname = "xroad-0#{i}"
+     minion.vm.network :private_network, ip: "10.1.10.#{ip}"
+     # Set master hostname
+     minion.vm.provision :shell, :inline => $bootstrapMinion, :args => [MASTER_IP]
+   end
+ end
+   # The Salt Master VM
+ config.vm.define :saltmaster do |saltmaster|
+   saltmaster.vm.box = vm_box
+   saltmaster.vm.network :private_network, ip: "#{MASTER_IP}"
+   saltmaster.vm.hostname = 'saltmaster'
+   saltmaster.vm.provision :shell, :inline => $bootstrapMaster, :args => [MINION_CNT]
+ end
+end

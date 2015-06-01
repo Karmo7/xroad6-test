@@ -1,41 +1,71 @@
 MINION_CNT = 2
 
+MINIONS = [
+  { :name => 'securityserver.one' },
+  { :name => 'securityserver.two' },
+  { :name => 'securityserver.three' },
+  { :name => 'centralserver' },
+  ]
+
 MASTER_IP = "10.1.10.3"
 
 vm_box = 'ubuntu/trusty64'
 
 $bootstrapMinion = <<SCRIPT
- echo "#{MASTER_IP} saltmaster" >> /etc/hosts
- hostname `cat /etc/hostname`
- echo Updated hosts entry for 'salt' to #{MASTER_IP}
- wget -O install_salt.sh https://bootstrap.saltstack.com
- sh install_salt.sh
- echo "master: #{MASTER_IP}" >> /etc/salt/minion
- service salt-minion restart
- echo "LC_ALL=en_US.UTF-8" >> /etc/environment
+  echo "#{MASTER_IP} saltmaster" >> /etc/hosts
+  hostname `cat /etc/hostname`
+  echo Updated hosts entry for 'salt' to #{MASTER_IP}
+  wget -O install_salt.sh https://bootstrap.saltstack.com
+  sh install_salt.sh
+  echo "master: #{MASTER_IP}" >> /etc/salt/minion
+  service salt-minion restart
+  echo "LC_ALL=en_US.UTF-8" >> /etc/environment
 SCRIPT
 
 $bootstrapMaster = <<SCRIPT
- echo "LC_ALL=en_US.UTF-8" >> /etc/environment
- wget -O install_salt.sh https://bootstrap.saltstack.com
- sudo sh install_salt.sh -M -N
- echo "waiting for minions.."
- sleep 11
- salt-key -L
- salt-key -A -y
- salt '*' test.ping
+  echo "LC_ALL=en_US.UTF-8" >> /etc/environment
+  wget -O install_salt.sh https://bootstrap.saltstack.com
+  sudo sh install_salt.sh -M -N
+  echo "waiting for minions.."
+  sleep 11
+  salt-key -L
+  salt-key -A -y
+  salt 'securityserver*' test.ping
+  echo "installing xroad-securityserver to all securityservers..."
+  echo "yes, i know there is better way, however this is what xroad install doc says ;)"
+  salt 'securityserver.*' cmd.run 'curl -s -q http://x-road.eu/.test/xroad/xroad_repo.gpg| sudo apt-key add -'
+  salt 'securityserver.*' cmd.run 'echo "deb file:/srv/xroad/debs trusty main" > /etc/apt/sources.list.d/xroad.list'
+  salt 'securityserver.*' cmd.run 'apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 00A6F0A3C300EE8C'
+  salt 'securityserver.*' cmd.run 'echo "deb http://ppa.launchpad.net/nginx/stable/ubuntu trusty main" >> /etc/apt/sources.list.d/xroad.list'
+  salt 'securityserver.*' cmd.run 'apt-key adv --keyserver keyserver.ubuntu.com --recv-keys EB9B1D8886F44E2A'
+  salt 'securityserver.*' cmd.run 'echo "deb http://ppa.launchpad.net/openjdk-r/ppa/ubuntu trusty main " >> /etc/apt/sources.list.d/xroad.list' 
+  salt 'securityserver.*' cmd.run 'apt-get update'
+  salt 'securityserver.*' cmd.run 'echo "xroad-proxy xroad-common/username string vagrant" | debconf-set-selections'
+  salt 'securityserver.*' cmd.run 'echo "xroad-proxy xroad-common/admin-subject string /CN=xroad-02" | debconf-set-selections'
+  salt 'securityserver.*' cmd.run 'echo "xroad-proxy xroad-common/admin-altsubject string IP:10.1.10.5,DNS:xroad-02" | debconf-set-selections'
+  salt 'securityserver.*' cmd.run 'echo "xroad-proxy xroad-common/service-subject string /CN=xroad-02" | debconf-set-selections' 
+  salt 'securityserver.*' cmd.run 'echo "xroad-proxy xroad-common/service-altsubject string IP:10.1.10.5,DNS:xroad-02" | debconf-set-selections'
+  salt 'securityserver.*' cmd.run 'export DEBIAN_FRONTEND=noninteractive'
+  salt 'securityserver.*' cmd.run 'apt-get -q -y install xroad-securityserver'
+  salt 'securityserver.*' cmd.run 'initctl list| grep xroad'
+  salt 'centralserver*' test.ping
+  #todo set up central server...
 SCRIPT
 
 Vagrant.configure('2') do |config|
 
  # The Minions
- (1..MINION_CNT).each do |i|
-   config.vm.define "xroad-0#{i}" do |minion|
+ i = 0
+ MINIONS.each do |opts|
+   i = i + 1
+   #config.vm.define "xroad-0#{i}" do |minion|
+   config.vm.define opts[:name] do |minion|
      minion.vm.box = vm_box
      minion.vm.synced_folder "../xroad", "/srv/xroad"
      ip = i + 3
-     minion.vm.hostname = "xroad-0#{i}"
+     minion.vm.hostname = opts[:name] 
      minion.vm.network :private_network, ip: "10.1.10.#{ip}"
+     # minion.vm.network :public_network, ip: "192.168.10.#{ip}"
      # Set master hostname
      minion.vm.provision :shell, :inline => $bootstrapMinion, :args => [MASTER_IP]
    end

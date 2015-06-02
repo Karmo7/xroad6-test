@@ -51,8 +51,7 @@ SCRIPT
 Vagrant.configure('2') do |config|
 
  # The Minions
- i = 0
- MINIONS.each do |opts|
+ MINIONS.each_with_index do |opts, i|
    i = i + 1
    #config.vm.define "xroad-0#{i}" do |minion|
    config.vm.define opts[:name] do |minion|

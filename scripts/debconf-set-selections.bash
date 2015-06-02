@@ -9,4 +9,4 @@ echo "xroad-proxy xroad-common/admin-altsubject string IP:$IP,DNS:$NAME" | debco
 echo "xroad-proxy xroad-common/service-subject string /CN=$NAME" | debconf-set-selections
 echo "xroad-proxy xroad-common/service-altsubject string IP:$IP,DNS:$NAME" | debconf-set-selections
 debconf-get-selections | grep xroad
-DEBIAN_FRONTEND=noninteractive apt-get -q -y install xroad-securityserver
+

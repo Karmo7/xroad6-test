@@ -1,10 +1,10 @@
 
 
 MINIONS = [
-  { :name => 'securityserver.one' },
-  { :name => 'securityserver.two' },
-  { :name => 'securityserver.three' },
-  { :name => 'centralserver' },
+  { :name => 'securityserver.one.one' },
+  { :name => 'securityserver.two.one' },
+  { :name => 'securityserver.three.one' },
+  { :name => 'centralserver.one' },
   ]
 
 MASTER_IP = "10.1.10.3"
@@ -40,11 +40,14 @@ $bootstrapMaster = <<SCRIPT
   salt 'securityserver.*' cmd.run 'apt-key adv --keyserver keyserver.ubuntu.com --recv-keys EB9B1D8886F44E2A'
   salt 'securityserver.*' cmd.run 'echo "deb http://ppa.launchpad.net/openjdk-r/ppa/ubuntu trusty main " >> /etc/apt/sources.list.d/xroad.list' 
   salt 'securityserver.*' cmd.run 'apt-get update'
-  salt-cp 'securityserver*' /tmp/xroad/scripts/install_securityserver.bash /usr/local/bin/install_securityserver.bash
-  salt 'securityserver*' cmd.run "chmod 700 /usr/local/bin/install_securityserver.bash"
-  salt 'securityserver*' cmd.run "/usr/local/bin/install_securityserver.bash"
+  salt-cp 'securityserver.*' /tmp/xroad/scripts/install_securityserver.bash /usr/local/bin/install_securityserver.bash
+  salt 'securityserver.*' cmd.run "chmod 700 /usr/local/bin/install_securityserver.bash"
+  salt 'securityserver.*' cmd.run "/usr/local/bin/install_securityserver.bash"
   salt 'securityserver.*' cmd.run 'initctl list| grep xroad'
-  salt 'centralserver*' test.ping
+  salt 'securityserver.*' cmd.run "curl  -ks https://localhost:4000/login|wc -l"
+  salt 'securityserver.*' cmd.run "curl  -s http://localhost:8083/login|wc -l"
+  echo "you should see magic number 33"
+  salt 'centralserver.*' test.ping
   #todo set up central server...
 SCRIPT
 

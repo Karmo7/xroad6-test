@@ -1,12 +1,13 @@
 
 
 MINIONS = [
+  { :name => 'centralserver.one' },
   { :name => 'securityserver.one.one' },
   { :name => 'securityserver.two.one' },
   { :name => 'securityserver.three.one' },
-  { :name => 'centralserver.one' },
   ]
 
+SELENIUM_IP = "10.1.10.2"
 MASTER_IP = "10.1.10.3"
 
 vm_box = 'ubuntu/trusty64'
@@ -57,6 +58,16 @@ $bootstrapMaster = <<SCRIPT
   #todo set up central server...
 SCRIPT
 
+$bootstrapSelenium = <<SCRIPT
+    apt-get -q update
+    apt-get install -y -q ruby1.9.1-dev
+    gem install selenium-webdriver
+    apt-get install -y -q phantomjs
+    pt-get install -y -q xvfb
+    gem install headless
+    sudo apt-get install -y -q firefox
+SCRIPT
+
 Vagrant.configure('2') do |config|
 
  # The Minions
@@ -84,6 +95,15 @@ Vagrant.configure('2') do |config|
    saltmaster.vm.hostname = 'saltmaster'
    saltmaster.vm.provision "file", source: "../scripts/debconf-set-selections.bash", destination: "/tmp/xroad/scripts/debconf-set-selections.bash"
    saltmaster.vm.provision :shell, :inline => $bootstrapMaster
-
  end
+
+  config.vm.define :selenium do |selenium|
+   selenium.vm.box = vm_box
+   selenium.vm.network :private_network, ip: "#{SELENIUM_IP}"
+   selenium.vm.hostname = 'selenium'
+   selenium.vm.provision "file", source: "../scripts/selenium-setup-centralserver.rb", destination: "/tmp/xroad/scripts/selenium-setup-centralserver.rb"
+   selenium.vm.provision "file", source: "../scripts/selenium-setup-securityserver.rb", destination: "/tmp/xroad/scripts/selenium-setup-securityserver.rb"
+   selenium.vm.provision :shell, :inline => $bootstrapSelenium
+ end
+
 end

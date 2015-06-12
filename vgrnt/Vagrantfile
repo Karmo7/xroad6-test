@@ -2,9 +2,15 @@
 
 MINIONS = [
   { :name => 'centralserver.one' },
-  { :name => 'securityserver.one.one' },
-  { :name => 'securityserver.two.one' },
-  { :name => 'securityserver.three.one' },
+  { :name => 'securityserver.one' },
+  { :name => 'securityserver.gov.one' },
+  { :name => 'securityserver.com.one' },
+  { :name => 'securityserver.org.one' },
+  { :name => 'centralserver.yks' },
+  { :name => 'securityserver.yks' },
+  { :name => 'securityserver.com.yks' },
+  { :name => 'securityserver.org.yks' },
+  { :name => 'securityserver.gov.yks' },
   ]
 
 SELENIUM_IP = "10.1.10.2"
@@ -45,23 +51,23 @@ $bootstrapMaster = <<SCRIPT
   salt '*server.*' cmd.run "chmod 700 /usr/local/bin/debconf-set-selections.bash"
   salt '*server.*' cmd.run "/usr/local/bin/debconf-set-selections.bash"
   echo 'installing centralservers ..'
+  salt 'centralserver.*' test.ping
   salt 'centralserver.*' cmd.run "apt-get -q -y install xroad-centralserver"
   salt 'centralserver.*' cmd.run 'initctl list| grep xroad'
   salt 'centralserver.*' cmd.run "curl  -ks https://localhost:4000/login|wc -l"
   echo 'installing securityservers ..'
+  salt 'securityserver.*' test.ping
   salt 'securityserver.*' cmd.run "apt-get -q -y install xroad-securityserver"
   salt 'securityserver.*' cmd.run 'initctl list| grep xroad'
   salt 'securityserver.*' cmd.run "curl  -ks https://localhost:4000/login|wc -l"
-  salt 'securityserver.*' cmd.run "curl  -s http://localhost:8083/login|wc -l"
   echo "you should see magic number 33"
-  salt 'centralserver.*' test.ping
-  #todo set up central server...
 SCRIPT
 
 $bootstrapSelenium = <<SCRIPT
     apt-get -q update
-    apt-get install -y -q ruby1.9.1-dev
-    gem install selenium-webdriver
+    apt-get install -y -q python-pip
+
+    pip install selenium
     apt-get install -y -q phantomjs
     pt-get install -y -q xvfb
     gem install headless
@@ -101,8 +107,8 @@ Vagrant.configure('2') do |config|
    selenium.vm.box = vm_box
    selenium.vm.network :private_network, ip: "#{SELENIUM_IP}"
    selenium.vm.hostname = 'selenium'
-   selenium.vm.provision "file", source: "../scripts/selenium-setup-centralserver.rb", destination: "/tmp/xroad/scripts/selenium-setup-centralserver.rb"
-   selenium.vm.provision "file", source: "../scripts/selenium-setup-securityserver.rb", destination: "/tmp/xroad/scripts/selenium-setup-securityserver.rb"
+   selenium.vm.provision "file", source: "../scripts/selenium-setup-centralserver.py", destination: "/tmp/xroad/scripts/selenium-setup-centralserver.py"
+   selenium.vm.provision "file", source: "../scripts/selenium-setup-securityserver.py", destination: "/tmp/xroad/scripts/selenium-setup-securityserver.py"
    selenium.vm.provision :shell, :inline => $bootstrapSelenium
  end
 

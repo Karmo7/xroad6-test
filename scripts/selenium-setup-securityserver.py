@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from pyvirtualdisplay import Display
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -9,6 +10,8 @@ import unittest, time, re
 
 class Secserv(unittest.TestCase):
     def setUp(self):
+        self.display = Display(visible=0, size=(1024,768))
+        self.display.start()
         self.driver = webdriver.Firefox()
         self.driver.implicitly_wait(30)
         #todo: move ip to args
@@ -19,6 +22,7 @@ class Secserv(unittest.TestCase):
     def test_secserv(self):
         driver = self.driver
         driver.get("https://10.1.10.7:4000/login")
+        driver.get_screenshot_as_file("/tmp/screenshots/securityserver-first.png")
         self.assertEqual("Security Server Administration", driver.title)
         driver.find_element_by_id("j_username").clear()
         driver.find_element_by_id("j_username").send_keys("vagrant")
@@ -54,6 +58,7 @@ class Secserv(unittest.TestCase):
     
     def tearDown(self):
         self.driver.quit()
+        self.display.stop()
         self.assertEqual([], self.verificationErrors)
 
 if __name__ == "__main__":

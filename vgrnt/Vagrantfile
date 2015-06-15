@@ -2,12 +2,12 @@
 
 MINIONS = [
   { :name => 'centralserver.one' },
-  { :name => 'securityserver.one' },
+  { :name => 'securityserver.sys.one' },
   { :name => 'securityserver.gov.one' },
   { :name => 'securityserver.com.one' },
   { :name => 'securityserver.org.one' },
   { :name => 'centralserver.yks' },
-  { :name => 'securityserver.yks' },
+  { :name => 'securityserver.sys.yks' },
   { :name => 'securityserver.com.yks' },
   { :name => 'securityserver.org.yks' },
   { :name => 'securityserver.gov.yks' },
@@ -32,7 +32,7 @@ SCRIPT
 $bootstrapMaster = <<SCRIPT
   echo "LC_ALL=en_US.UTF-8" >> /etc/environment
   wget -O install_salt.sh https://bootstrap.saltstack.com
-  sudo sh install_salt.sh -M -N
+  sh install_salt.sh -M -N
   echo "waiting for minions.."
   sleep 11
   salt-key -L
@@ -40,7 +40,7 @@ $bootstrapMaster = <<SCRIPT
   salt '*' test.ping
   echo "setting up debs for all ..."
   echo "yes, i know there is better way, however this is what xroad install doc says ;)"
-  salt '*server.*' cmd.run 'curl -s -q http://x-road.eu/.test/xroad/xroad_repo.gpg| sudo apt-key add -'
+  salt '*server.*' cmd.run 'curl -s -q http://x-road.eu/.test/xroad_repo.gpg| sudo apt-key add -'
   salt '*server.*' cmd.run 'echo "deb file:/srv/xroad/debs trusty main" > /etc/apt/sources.list.d/xroad.list'
   salt '*server.*' cmd.run 'apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 00A6F0A3C300EE8C'
   salt '*server.*' cmd.run 'echo "deb http://ppa.launchpad.net/nginx/stable/ubuntu trusty main" >> /etc/apt/sources.list.d/xroad.list'
@@ -65,13 +65,11 @@ SCRIPT
 
 $bootstrapSelenium = <<SCRIPT
     apt-get -q update
+    apt-get install -y -q xvfb
+    apt-get install -y -q firefox
     apt-get install -y -q python-pip
-
+    pip install pyvirtualdisplay
     pip install selenium
-    apt-get install -y -q phantomjs
-    pt-get install -y -q xvfb
-    gem install headless
-    sudo apt-get install -y -q firefox
 SCRIPT
 
 Vagrant.configure('2') do |config|

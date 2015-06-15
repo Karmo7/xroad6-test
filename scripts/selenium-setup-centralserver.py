@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from pyvirtualdisplay import Display
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -9,6 +10,8 @@ import unittest, time, re
 
 class CentralserverInit(unittest.TestCase):
     def setUp(self):
+        self.display = Display(visible=0, size=(1024,768))
+        self.display.start()
         self.driver = webdriver.Firefox()
         self.driver.implicitly_wait(30)
         self.base_url = "https://10.1.10.7:4000/"
@@ -18,12 +21,16 @@ class CentralserverInit(unittest.TestCase):
     def test_centralserver_init(self):
         driver = self.driver
         driver.get("https://10.1.10.4:4000/login")
+        driver.get_screenshot_as_file("/tmp/screenshots/centralserver-first.png")
         self.assertEqual("Central Server Administration", driver.title)
         driver.find_element_by_id("j_username").clear()
         driver.find_element_by_id("j_username").send_keys("vagrant")
         driver.find_element_by_id("j_password").clear()
         driver.find_element_by_id("j_password").send_keys("vagrant")
+        driver.get_screenshot_as_file("/tmp/screenshots/centralserver-login.png")
         driver.find_element_by_css_selector("button.btn").click()
+        driver.implicitly_wait(1)
+        driver.get_screenshot_as_file("/tmp/screenshots/centralserver-pins-empty.png")
         self.assertEqual("Central Server Administration", driver.title)
         driver.find_element_by_id("instance_identifier").clear()
         driver.find_element_by_id("instance_identifier").send_keys("one")
@@ -33,7 +40,10 @@ class CentralserverInit(unittest.TestCase):
         driver.find_element_by_id("pin").send_keys("1234")
         driver.find_element_by_id("pin_repeat").clear()
         driver.find_element_by_id("pin_repeat").send_keys("1234")
+        driver.get_screenshot_as_file("/tmp/screenshots/centralserver-pins-filled.png")
         driver.find_element_by_id("submit").click()
+        driver.implicitly_wait(2)
+        driver.get_screenshot_as_file("/tmp/screenshots/centralserver-main-after-pins.png")
         self.assertEqual("init.index.initialized", self.close_alert_and_get_its_text())
         driver.find_element_by_xpath("(//button[@type='button'])[8]").click()
     
@@ -60,6 +70,7 @@ class CentralserverInit(unittest.TestCase):
     
     def tearDown(self):
         self.driver.quit()
+        self.display.stop()
         self.assertEqual([], self.verificationErrors)
 
 if __name__ == "__main__":

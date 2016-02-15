@@ -4,13 +4,13 @@ MINIONS = [
   { :name => 'centralserver.one' },
   { :name => 'securityserver.sys.one' },
   { :name => 'securityserver.gov.one' },
-  { :name => 'securityserver.com.one' },
-  { :name => 'securityserver.org.one' },
+#  { :name => 'securityserver.com.one' },
+#  { :name => 'securityserver.org.one' },
   { :name => 'centralserver.yks' },
-  { :name => 'securityserver.sys.yks' },
-  { :name => 'securityserver.com.yks' },
-  { :name => 'securityserver.org.yks' },
-  { :name => 'securityserver.gov.yks' },
+#  { :name => 'securityserver.sys.yks' },
+#  { :name => 'securityserver.com.yks' },
+#  { :name => 'securityserver.org.yks' },
+#  { :name => 'securityserver.gov.yks' },
   ]
 
 SELENIUM_IP = "10.1.10.2"
@@ -85,7 +85,7 @@ Vagrant.configure('2') do |config|
      minion.vm.hostname = opts[:name] 
      minion.vm.network :private_network, ip: "10.1.10.#{ip}"
      config.vm.provider :virtualbox do |vb|
-      vb.customize ["modifyvm", :id, "--memory", "2048"]
+      vb.customize ["modifyvm", :id, "--memory", "400"]
       end
      # minion.vm.network :public_network, ip: "192.168.10.#{ip}"
      # Set master hostname
